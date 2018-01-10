@@ -1,7 +1,7 @@
 kafka_exporter
 ==============
 
-[![Build Status](https://travis-ci.org/danielqsj/kafka_exporter.svg?branch=master)](https://travis-ci.org/danielqsj/kafka_exporter)[![Docker Pulls](https://img.shields.io/docker/pulls/danielqsj/kafka-exporter.svg)](https://hub.docker.com/r/danielqsj/kafka-exporter)[![Go Report Card](https://goreportcard.com/badge/github.com/danielqsj/kafka_exporter)](https://goreportcard.com/report/github.com/danielqsj/kafka_exporter)[![Language](https://img.shields.io/badge/language-Go-red.svg)](https://github.com/danielqsj/kafka-exporter)[![GitHub release](https://img.shields.io/badge/release-0.2.0-green.svg)](https://github.com/alibaba/derrick/releases)[![License](https://img.shields.io/badge/license-Apache%202-4EB1BA.svg)](https://www.apache.org/licenses/LICENSE-2.0.html)
+[![Build Status](https://travis-ci.org/danielqsj/kafka_exporter.svg?branch=master)](https://travis-ci.org/danielqsj/kafka_exporter)[![Docker Pulls](https://img.shields.io/docker/pulls/danielqsj/kafka-exporter.svg)](https://hub.docker.com/r/danielqsj/kafka-exporter)[![Go Report Card](https://goreportcard.com/badge/github.com/danielqsj/kafka_exporter)](https://goreportcard.com/report/github.com/danielqsj/kafka_exporter)[![Language](https://img.shields.io/badge/language-Go-red.svg)](https://github.com/danielqsj/kafka-exporter)[![GitHub release](https://img.shields.io/badge/release-1.0.0-green.svg)](https://github.com/alibaba/derrick/releases)[![License](https://img.shields.io/badge/license-Apache%202-4EB1BA.svg)](https://www.apache.org/licenses/LICENSE-2.0.html)
 
 Kafka exporter for Prometheus. For other metrics from Kafka, have a look at the [JMX exporter](https://github.com/prometheus/jmx_exporter).
 
@@ -12,12 +12,13 @@ Table of Contents
 -	[Dependency](#dependency)
 -	[Download](#download)
 -	[Compile](#compile)
-	-	[build binary](#build-binary)
-	-	[build docker image](#build-docker-image)
+	-	[Build Binary](#build-binary)
+	-	[Build Docker Image](#build-docker-image)
 -	[Run](#run)
-	-	[run binary](#run-binary)
-	-	[run docker image](#run-docker-image)
--	[Options](#options)
+	-	[Run Binary](#run-binary)
+	-	[Run Docker Image](#run-docker-image)
+-	[Flags](#flags)
+    -	[Notes](#notes)
 -	[Metrics](#metrics)
 	-	[Brokers](#brokers)
 	-	[Topics](#topics)
@@ -44,13 +45,13 @@ Binary can be downloaded from [Releases](https://github.com/danielqsj/kafka_expo
 Compile
 -------
 
-### build binary
+### Build Binary
 
 ```shell
 make
 ```
 
-### build docker image
+### Build Docker Image
 
 ```shell
 make docker
@@ -68,16 +69,16 @@ It can be used directly instead of having to build the image yourself. ([Docker 
 Run
 ---
 
-### run binary
+### Run Binary
 
 ```shell
 kafka_exporter --kafka.server=kafka:9092 [--kafka.server=another-server ...]
 ```
 
-### run docker image
+### Run Docker Image
 
 ```
-docker run  -ti --rm danielqsj/kafka-exporter --kafka.server=kafka:9092 [--kafka.server=another-server ...]
+docker run -ti --rm -p 9308:9308 danielqsj/kafka-exporter --kafka.server=kafka:9092 [--kafka.server=another-server ...]
 ```
 
 Flags
@@ -85,11 +86,32 @@ Flags
 
 This image is configurable using different flags
 
-| Flag name          | Default    | Description                                          |
-|--------------------|------------|------------------------------------------------------|
-| kafka.server       | kafka:9092 | Addresses (host:port) of Kafka server                |
-| web.listen-address | :9308      | Address to listen on for web interface and telemetry |
-| web.telemetry-path | /metrics   | Path under which to expose metrics                   |
+| Flag name                    | Default    | Description                                                                                         |
+| ---------------------------- | ---------- | --------------------------------------------------------------------------------------------------- |
+| kafka.server                 | kafka:9092 | Addresses (host:port) of Kafka server                                                               |
+| sasl.enabled                 | false      | Connect using SASL/PLAIN                                                                            |
+| sasl.handshake               | true       | Only set this to false if using a non-Kafka SASL proxy                                              |
+| sasl.username                |            | SASL user name                                                                                      |
+| sasl.password                |            | SASL user password                                                                                  |
+| tls.enabled                  | false      | Connect using TLS                                                                                   |
+| tls.ca-file                  |            | The optional certificate authority file for TLS client authentication                               |
+| tls.cert-file                |            | The optional certificate file for client authentication                                             |
+| tls.key-file                 |            | The optional key file for client authentication                                                     |
+| tls.insecure-skip-tls-verify | false      | If true, the server's certificate will not be checked for validity                                  |
+| topic.filter                 | .*         | Regex that determines which topics to collect                                                       |
+| web.listen-address           | :9308      | Address to listen on for web interface and telemetry                                                |
+| web.telemetry-path           | /metrics   | Path under which to expose metrics                                                                  |
+| log.level                    | info       | Only log messages with the given severity or above. Valid levels: [debug, info, warn, error, fatal] |
+| log.enable-sarama            | false      | Turn on Sarama logging                                                                              |
+
+### Notes
+
+Boolean values are uniquely managed by [Kingpin](https://github.com/alecthomas/kingpin/blob/master/README.md#boolean-values). Each boolean flag will have a negative complement:
+`--<name>` and `--no-<name>`.
+
+For example:
+
+If you need to disable `sasl.handshake`, you could add flag `--no-sasl.handshake`
 
 Metrics
 -------
@@ -103,7 +125,7 @@ For details on the underlying metrics please see [Apache Kafka](https://kafka.ap
 **Metrics details**
 
 | Name            | Exposed informations                   |
-|-----------------|----------------------------------------|
+| --------------- | -------------------------------------- |
 | `kafka_brokers` | Number of Brokers in the Kafka Cluster |
 
 **Metrics output example**
@@ -119,7 +141,7 @@ kafka_brokers 3
 **Metrics details**
 
 | Name                                               | Exposed informations                                |
-|----------------------------------------------------|-----------------------------------------------------|
+| -------------------------------------------------- | --------------------------------------------------- |
 | `kafka_topic_partitions`                           | Number of partitions for this Topic                 |
 | `kafka_topic_partition_current_offset`             | Current Offset of a Broker at Topic/Partition       |
 | `kafka_topic_partition_oldest_offset`              | Oldest Offset of a Broker at Topic/Partition        |
@@ -170,7 +192,7 @@ kafka_topic_partition_under_replicated_partition{partition="0",topic="__consumer
 **Metrics details**
 
 | Name                                 | Exposed informations                                          |
-|--------------------------------------|---------------------------------------------------------------|
+| ------------------------------------ | ------------------------------------------------------------- |
 | `kafka_consumergroup_current_offset` | Current Offset of a ConsumerGroup at Topic/Partition          |
 | `kafka_consumergroup_lag`            | Current Approximate Lag of a ConsumerGroup at Topic/Partition |
 
